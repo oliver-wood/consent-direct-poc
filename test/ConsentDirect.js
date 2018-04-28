@@ -1,11 +1,10 @@
-
-
-var ethers = require('ethers');
 const leftPad = require('left-pad');
 
 var ConsentDirect = artifacts.require("ConsentDirect");
 
 
+/*
+// Testdata with Ganache accounts
 var testdata = {
     "deployer": {
         "pk": "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3",
@@ -51,7 +50,60 @@ var testdata = {
         "email": "plato@platoscarriage.com"
     }
 }
+*/
 
+// Geth Wallets
+var testdata = {
+    "deployer": {
+        "pk": "0x83e9239bdde2078062a85235fe2dbfef9755f8badb15e4683948435a21f6e2dd",
+        "address": "0x413F1a40a696388FAEE90EaA70F3cc7A1C8BCeCF",
+        "name": "Consent.Direct"
+    },
+    "processor1" : {
+        "pk": "0x60b4d09d0d581409147c343155777f3f308a61125c12b5f6748759b5a16dbbcf",
+        "address": "0x0B0162Dc9A0eb23c897B72843D1C9F3350961B0B",
+        "name": "Hamsters Trust Charity",
+        "questions": [
+            {
+                "text": "Please may we email you the latest updates?"
+            },
+            {
+                "text": "Please can we contact you by post?"
+            }            
+        ]
+    }
+    ,
+    "processor2" : {
+        "pk": "0x549924a9ea7d210e29cb0a71177337e76265db401c835a44d14fb7193c5b383f",
+        "address": "0x6FDbE7ecFb60bB5845D04d8EbD8F2074527b8588",
+        "name": "John's Crypto Hideout",
+        "questions": [
+            {
+                "text": "Please may we email you?"
+            },
+            {
+                "text": "Please can we stay in touch by SMS or phone call?"
+            }
+        ]
+    }
+    ,
+    "subject1" : {
+        "pk": "0xa836f5ef24df4e714e12162bf997a7ff80278d2a1c93d14d5d47bfaaee961347",
+        "address": "0xc597179a70e226648a617316a2dea74f76f6d01b",
+        "email": "oliver@bitetos.com"
+    },
+    "subject2": {
+        "pk": "0x6d0fcc6b7b2abd0970864d6d86477aa6066b2ad2f962c4c784711e954338d54d",
+        "address": "0xa331e0187a9622757ab6a8d3c108d4b8fe969d92",
+        "email": "plato@platoscarriage.com"
+    }
+}
+web3.personal.unlockAccount(testdata.deployer.address, "number9dream", 600);
+web3.personal.unlockAccount(testdata.processor1.address, "number9dream", 600);
+web3.personal.unlockAccount(testdata.processor2.address, "number9dream", 600);
+web3.personal.unlockAccount(testdata.subject1.address, "number9dream", 600);
+web3.personal.unlockAccount(testdata.subject2.address, "number9dream", 600);
+// -- End Geth accounts
 
 web3.eth.defaultAccount = testdata.deployer.address;
 var cdcontract;
@@ -226,8 +278,6 @@ contract("ConsentDirect", function () {
         })
         .then(results => {
             console.log(`       - Got subject id ${results[0]}, with ${results[1]} responses, email hash "${results[2]}"`);
-        })
-        .then(() => {
             return cdcontract.registerSubject(testdata.subject2.address, keccak256(testdata.subject2.email), {from: testdata.deployer.address});
         })
         .then(result => {
@@ -288,30 +338,33 @@ contract("ConsentDirect", function () {
             let msghash = keccak256('Authority given for:', parseInt(testdata.processor2.consentRequestQuestions[0].id));
             console.log(`        - Hashed message to sign: ${msghash}`);
             
+            /*
             // With Ethers.js and Ganache, reliably signing the keccak256 of the message and passing that same hash to 
             // seems to be acceptable
             const signingKey = new ethers.SigningKey(testdata.subject2.pk);
             const sig = signingKey.signDigest(msghash);
-            let v = sig.recoveryParam + 27;
-            let r = sig.r;
-            let s = sig.s;
-            console.log(`        -- Signed using Ethers.js - r: ${r}; s: ${s}; v: ${v}`);
+            let v1 = sig.recoveryParam + 27;
+            let r1 = sig.r;
+            let s1 = sig.s;
+            console.log(`        -- Signed using Ethers.js - r: ${r1}; s: ${s1}; v: ${sig.recoveryParam} / ${v1}`);
+            */
 
-            /*
-            // web3.js style seems to include 
-            let hashedmessage = web3.sha3(`\x19Ethereum Signed Message:\n32${msghash}`);
+            // web3.js signing using geth seems to include the message prefix
+            //  \x19Ethereum Signed Message:\n32${msghash}`);
+            // Remember the "32" is the length of the message, which is always 32 if we're dealing with a hash!
             let signature = web3.eth.sign(testdata.subject2.address, msghash);
 
+            // Now, hack the signed message up into its constituent parts
             signature = signature.substr(2); //remove 0x
             const r = '0x' + signature.slice(0, 64);
             const s = '0x' + signature.slice(64, 128);
             const v = '0x' + signature.slice(128, 130);
             let v_decimal = web3.toDecimal(v);
-            v_decimal = v_decimal >= 27 && v_decimal <= 28 ? v_decimal : 27;
-            console.log(`        -- Web3js - r: ${r}; s: ${s}; v: ${v} / ${v_decimal}`);
-            */
-            
-            // var result = cdcontract.verify(v, r, s, hashedmessage, {from: testdata.processor2.address });
+            // This seems to be a problem in testrpc/ganache where the v is being returned as 0 or 1
+            // Signing against geth returns a value of 28
+            v_decimal = v_decimal >= 27 && v_decimal <= 28 ? v_decimal : v_decimal+27;
+            console.log(`        -- Signed using Web3js - r: ${r}; s: ${s}; v: ${v} / ${v_decimal}`);
+                        
             return cdcontract.giveConsentWithSignedMessage(v, r, s, msghash, testdata.processor2.consentRequestQuestions[0].id, {from: testdata.processor2.address });
         })
         .then(result => {
@@ -322,6 +375,9 @@ contract("ConsentDirect", function () {
             for (var i = 0; i < result.logs.length; i++) {
                 var log = result.logs[i];
                 console.log(`       - Event emitted ${log.event}`);
+                if (log.event == "DebugAddress") {
+                    console.log(`       -- ${log.args.message.valueOf()} ${log.args._address.valueOf()}`);
+                }
                 if (log.event == "ConsentGiven") {
                     console.log(`       -- By: ${log.args.account.valueOf()}`);
                     console.log(`       -- For: ${log.args.consentRequestId.valueOf()}`);
@@ -510,57 +566,3 @@ function keccak256(...args) {
   args = args.join('');
   return web3.sha3(args, { encoding: 'hex' })
 }
-
-/*
-var ethers = require('ethers');
-var utils = require('ethers').utils;
-
-// Using Ethers.js contract deployment
-var deployTransaction = ethers.Contract.getDeployTransaction(ConsentDirect.bytecode, ConsentDirect.abi); 
-
-// Connect to Ganache
-var provider = new ethers.providers.JsonRpcProvider("http://localhost:7545");
-
-// Create wallets for each item of testdata
-for (var p of Object.getOwnPropertyNames(testdata)) {
-    testdata[p].wallet = new ethers.Wallet(testdata[p].pk, provider);
-}
-
-it("Can add a Data Processor", function() {
-    // Send the transaction
-    return testdata.deployer.wallet.sendTransaction(deployTransaction)
-      .then(transaction => {
-        let contractAddress = utils.getContractAddress(transaction);
-
-        for (var p of Object.getOwnPropertyNames(testdata)) {
-            testdata[p].contract = new ethers.Contract(contractAddress, ConsentDirect.abi, testdata[p].wallet);
-        }
-
-        testdata.deployer.contract.events.ondataprocessoradded = function(owner, questionAddress) {
-            console.log('   Owner: ' + owner);
-            console.log('   Question Address: ' + questionAddress);
-        }
-      })
-      .then(() => {
-        return testdata.deployer.contract.estimate.addDataProcessor(testdata.processor1.address, testdata.processor1.name);
-      })
-      .then(gascost => {
-        console.log('   Estimated Gas Cost: ' + gascost.toString());
-
-        var overrideOptions = {
-            gasLimit: 25000000
-        };
-
-        return testdata.deployer.contract.addDataProcessor(testdata.processor1.address, testdata.processor1.name, overrideOptions);
-      })
-      .then(() => {
-        console.log('    Got here");
-        return testdata.deployer.contract.getUint();
-      })
-      .then((name,listpointer) => {
-        assert.equal(name, testdata.processor1.name, "Data processor was incorrect");
-        assert.equal(listpointer, 0, "Listpointer wasn't zero");
-      });
-      
-  });
-  */

@@ -143,18 +143,29 @@ contract ConsentDirect is ConsentDirectRequest {
         bytes32 prefixedhash = keccak256(prefix, _consentRequestId);
         require(prefixedhash == data);
 
-        // The signer of the message is the respondent the consentRequest.
-        address signer = ecrecover(data, v, r, s);
-        // address signer = address(0);
-        
-        // For reference only: Ethereum prefix
-        // bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        
+        /*
+        // When signing messages using ethers.js and Gananche, the standard 
+        //  of prefixing the message with "Ethereum Signed Message" does not seem
+        //  to be followed.
+          address signer = ecrecover(data, v, r, s);
+          emit DebugAddress("Recovered signer address is: ", signer);
+        */
+
+        // Using geth and web3.eth.sign, the data that signed is prefixed under the hood, 
+        //  so we have add that prefix ourselves
+        bytes32 message = prefixed(data);
+        address signer = ecrecover(message, v, r, s);
+        emit DebugAddress("Recovered signer address is: ", signer);
+
         // requires signer to have registered account
         // Find the subject and add consent
         ConsentSubject storage cs = consentSubjectMap[signer];
         require(cs.emailhash != bytes32(0));
         _addConsentResponse(signer, _consentRequestId, true);
+    }
+
+    function prefixed(bytes32 hash) internal pure returns (bytes32) {
+        return keccak256("\x19Ethereum Signed Message:\n32", hash);
     }
 
     event Debug(string message);
