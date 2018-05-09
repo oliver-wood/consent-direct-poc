@@ -5,7 +5,7 @@ module.exports = {
       port: 8545,
       network_id: "*", // Match any network id,
       // from: "0x627306090abaB3A6e1400e9345bC60c78a8BEf57", // Ganache test account
-      from: "0x413F1a40a696388FAEE90EaA70F3cc7A1C8BCeCF" // Geth test account
+      from: "0x42c3b5107df5cb714f883ecaf4896f69d2b06a67" // Geth test account
     }
   }
 };

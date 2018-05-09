@@ -55,13 +55,13 @@ var testdata = {
 // Geth Wallets
 var testdata = {
     "deployer": {
-        "pk": "0x83e9239bdde2078062a85235fe2dbfef9755f8badb15e4683948435a21f6e2dd",
-        "address": "0x413F1a40a696388FAEE90EaA70F3cc7A1C8BCeCF",
+        "pk": "0xd030a3603b9875f08a10849997edd3d9a375075ae0b2397e734b3b33a7872a61",
+        "address": "0x42c3b5107df5cb714f883ecaf4896f69d2b06a67",
         "name": "Consent.Direct"
     },
     "processor1" : {
-        "pk": "0x60b4d09d0d581409147c343155777f3f308a61125c12b5f6748759b5a16dbbcf",
-        "address": "0x0B0162Dc9A0eb23c897B72843D1C9F3350961B0B",
+        "pk": "0x1226b9d15e4af26f89bed5ec8a5f0ae92e47cfd976631296a35adae28174b666",
+        "address": "0xb0277a8121441fcd0d4f9aa45e11a8c53b9cbfc7",
         "name": "Hamsters Trust Charity",
         "questions": [
             {
@@ -74,8 +74,8 @@ var testdata = {
     }
     ,
     "processor2" : {
-        "pk": "0x549924a9ea7d210e29cb0a71177337e76265db401c835a44d14fb7193c5b383f",
-        "address": "0x6FDbE7ecFb60bB5845D04d8EbD8F2074527b8588",
+        "pk": "0x2cc8c82b509671bd83e92e79f5d235851ea60e2064edbc3b8859a89bb5fc3eb6",
+        "address": "0x6d65dea4846bdbc12ee458c607bc078161689607",
         "name": "John's Crypto Hideout",
         "questions": [
             {
@@ -88,13 +88,13 @@ var testdata = {
     }
     ,
     "subject1" : {
-        "pk": "0xa836f5ef24df4e714e12162bf997a7ff80278d2a1c93d14d5d47bfaaee961347",
-        "address": "0xc597179a70e226648a617316a2dea74f76f6d01b",
+        "pk": "0x9b971856ca79accd487491fa06706ff7af9a6691b73c7a9f4d7073b87cdaad54",
+        "address": "0xce9b7ec8aa8dbb2708d8650255362457d05598dd",
         "email": "oliver@bitetos.com"
     },
     "subject2": {
-        "pk": "0x6d0fcc6b7b2abd0970864d6d86477aa6066b2ad2f962c4c784711e954338d54d",
-        "address": "0xa331e0187a9622757ab6a8d3c108d4b8fe969d92",
+        "pk": "0xea4596148dee5d4e585814f0b02808c2901e8d76fb87046e77c708d2c497f1a6",
+        "address": "0x38844a3cc6856b27c61deafb7f792ad542b2a7d8",
         "email": "plato@platoscarriage.com"
     }
 }
@@ -114,7 +114,7 @@ contract("ConsentDirect", function () {
         return ConsentDirect.deployed()
         .then(function(instance) {
             cdcontract = instance;
-            console.log('       - Contract deployed');
+            console.log(`       - Contract deployed to address: ${cdcontract.address}`);
 
             return cdcontract.addDataProcessor(testdata.processor1.address, testdata.processor1.name, {from: testdata.deployer.address} );
         })
